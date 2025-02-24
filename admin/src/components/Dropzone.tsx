@@ -1,16 +1,22 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Box, Button, Typography, Icon, Flex } from '@strapi/design-system';
+import { Box, Typography, Flex } from '@strapi/design-system';
 import { Upload } from '@strapi/icons';
 
-const CustomDropzone = ({ onUpload, disabled }: { onUpload: any; disabled: boolean }) => {
-  const [file, setFile] = useState<any>(null);
+const CustomDropzone = ({
+  onUpload,
+  disabled,
+}: {
+  onUpload: (files: File[]) => void;
+  disabled: boolean;
+}) => {
+  const [files, setFiles] = useState<File[]>([]);
 
   const onDrop = useCallback(
-    (acceptedFiles: any) => {
+    (acceptedFiles: File[]) => {
       if (acceptedFiles.length > 0) {
-        setFile(acceptedFiles[0]);
-        onUpload(acceptedFiles[0]);
+        setFiles(acceptedFiles);
+        onUpload(acceptedFiles);
       }
     },
     [onUpload]
@@ -21,7 +27,7 @@ const CustomDropzone = ({ onUpload, disabled }: { onUpload: any; disabled: boole
     accept: {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
     },
-    maxFiles: 1,
+    maxFiles: 5, // ✅ Allow multiple files
   });
 
   return (
@@ -38,7 +44,9 @@ const CustomDropzone = ({ onUpload, disabled }: { onUpload: any; disabled: boole
       <Flex direction="column" alignItems="center">
         <Upload />
         <Typography variant="epsilon">
-          {file ? file.name : 'Drag & Drop a document or click to browse'}
+          {files.length > 0
+            ? `${files.length} file(s) selected`
+            : 'Drag & Drop files or click to browse'}
         </Typography>
       </Flex>
     </Box>

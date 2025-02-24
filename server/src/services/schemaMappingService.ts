@@ -1,6 +1,5 @@
-//import slugify from 'slugify';
 //@ts-nocheck
-const validOpenAITypes = new Set(['string', 'boolean', 'number', 'object', 'array']); // ✅ OpenAI JSON Schema valid types
+const validOpenAITypes = new Set(['dynamiczone', 'string', 'boolean', 'number', 'object', 'array']); // ✅ OpenAI JSON Schema valid types
 
 const fixAttributeTypes = (attributes) => {
   const fixedAttributes = {};
@@ -208,9 +207,21 @@ const getSchemaForUID = async (uid) => {
 
   // ✅ Extract only relevant attributes (to avoid unnecessary fields)
   const allowedFields = ['title', 'slug', 'seo', 'hero', 'flexContent'];
-  const filteredAttributes = Object.fromEntries(
-    Object.entries(schema.attributes).filter(([key]) => allowedFields.includes(key))
-  );
+  const filteredAttributes = {};
+
+  for (const [key, value] of Object.entries(schema.attributes)) {
+    if (allowedFields.includes(key)) {
+      if (value.type === 'dynamiczone') {
+        filteredAttributes[key] = {
+          type: 'dynamiczone',
+          repeatable: value.repeatable || false,
+          components: value.components || [],
+        };
+      } else {
+        filteredAttributes[key] = value; // Keep other attributes unchanged
+      }
+    }
+  }
 
   // ✅ Get all components from Dynamic Zones
   const allComponentUids = new Set();

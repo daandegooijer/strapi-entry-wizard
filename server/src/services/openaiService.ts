@@ -50,11 +50,12 @@ Strictly return a JSON object matching the provided schema.
 const analyzeDocument = async (htmlContent, uid) => {
   try {
     const { attributes, components } = await schemaMappingService.getSchemaForUID(uid);
+
     const cleanedHTML = extractRelevantSections(htmlContent);
 
-    if (cache.has(cleanedHTML)) {
-      return cache.get(cleanedHTML);
-    }
+    // if (cache.has(cleanedHTML)) {
+    //   return cache.get(cleanedHTML);
+    // }
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4-turbo',
@@ -90,7 +91,6 @@ const analyzeDocument = async (htmlContent, uid) => {
 
 const parseOpenAIResponse = (openAIResponse) => {
   try {
-    // ✅ Extract arguments from OpenAI response
     const toolCalls = openAIResponse.choices[0]?.message?.tool_calls || [];
     const functionCall = toolCalls.find((tc) => tc.function.name === 'validate_strapi_data');
 
@@ -98,13 +98,12 @@ const parseOpenAIResponse = (openAIResponse) => {
       throw new Error('❌ No valid function call found in OpenAI response.');
     }
 
-    // ✅ Parse JSON from function arguments
     const entryData = JSON.parse(functionCall.function.arguments);
-    // ✅ Ensure required fields exist before creating the entry
+
     if (!entryData.title || !entryData.slug || !entryData.flexContent) {
       throw new Error('❌ Missing required fields in OpenAI response.');
     }
-    
+
     return entryData;
   } catch (error) {
     console.error('❌ Error Creating Entry from OpenAI Response:', error);

@@ -7,7 +7,6 @@ const cleanEntryData = (entryData, attributes) => {
     entryData.seo.keywords = entryData.seo.keywords.join(', ');
   }
 
-  // ✅ Loop through attributes to find dynamic zones
   Object.entries(attributes).forEach(([key, value]: [string, any]) => {
     if (value.type === 'dynamiczone') {
       // Ensure the field exists and is an array
@@ -16,7 +15,6 @@ const cleanEntryData = (entryData, attributes) => {
         entryData[key] = [entryData[key]]; // Convert to array
       }
 
-      // ✅ Ensure all dynamic zone entries have a `__component`
       if (Array.isArray(entryData[key])) {
         entryData[key] = entryData[key].map((item) => {
           if (!item.__component) {
@@ -67,7 +65,7 @@ const extractTextFromDocx = async (filePath: string) => {
 export default {
   async analyzeAndCreate(ctx) {
     const { file } = ctx.request.files;
-    const { uid } = ctx.request.body; // Get UID from request
+    const { uid } = ctx.request.body;
 
     if (!file || !uid) {
       ctx.throw(400, 'No document uploaded or UID missing');
@@ -81,15 +79,10 @@ export default {
     ) {
       ctx.throw(400, 'Unsupported file type');
     }
-    // Extract text from document
 
     text = await extractTextFromDocx(filePath);
-    const { attributes } = await schemaMappingService.getSchemaForUID(uid);
 
-    console.log(attributes);
-    return;
     try {
-      // Analyze document with OpenAI
       let extractedData = await openaiService.analyzeDocument(text, uid);
 
       if (!extractedData) {
@@ -97,9 +90,7 @@ export default {
       }
 
       const { attributes } = await schemaMappingService.getSchemaForUID(uid);
-      extractedData = cleanEntryData(extractedData, attributes); // ✅ Clean and fix data before saving
-
-      console.dir(extractedData, { depth: null });
+      extractedData = cleanEntryData(extractedData, attributes);
 
       const newEntry = await strapi.documents(uid).create({ data: extractedData });
 

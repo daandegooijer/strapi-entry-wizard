@@ -1,214 +1,144 @@
-// import React, { useEffect, useState } from 'react';
-// import {
-//   Modal,
-//   Button,
-//   Box,
-//   LinkButton,
-//   Flex,
-//   Typography,
-//   ProgressBar,
-// } from '@strapi/design-system';
-// import {
-//   useNotification,
-//   unstable_useContentManagerContext as useContentManagerContext,
-//   useAuth,
-// } from '@strapi/strapi/admin';
-// import { Magic } from '@strapi/icons';
-// import CustomDropzone from './Dropzone';
-//
-// const DropzoneModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: Function }) => {
-//   const [file, setFile] = useState(null);
-//   const { model } = useContentManagerContext(); // Get the current UID
-//   const token = useAuth('Admin', (state) => state.token);
-//   const [isLoading, setIsLoading] = useState(false);
-//   const [progress, setProgress] = useState(0); // Track progress percentage
-//
-//   useEffect(() => {
-//     if (!file) {
-//       return;
-//     }
-//
-//     handleUpload();
-//   }, [file]);
-//
-//   const handleUpload = async () => {
-//     if (!file || !model) {
-//       console.error('No file or UID provided');
-//       return;
-//     }
-//
-//     const formData = new FormData();
-//     formData.append('file', file);
-//     formData.append('uid', model);
-//
-//     setIsLoading(true);
-//     setProgress(10);
-//
-//     try {
-//       const xhr = new XMLHttpRequest();
-//
-//       xhr.upload.onprogress = (event) => {
-//         if (event.lengthComputable) {
-//           const percent = Math.round((event.loaded / event.total) * 50); // Cap at 50%
-//           setProgress(percent);
-//         }
-//       };
-//
-//       xhr.onload = async () => {
-//         if (xhr.status === 200) {
-//           setProgress(75); // Midway after file upload
-//           const result = JSON.parse(xhr.responseText);
-//           console.log('New Entry Created:', result.newEntry);
-//           setProgress(100);
-//           setTimeout(() => {
-//             setIsLoading(false);
-//             setProgress(0);
-//             onClose();
-//           }, 1000);
-//         } else {
-//           throw new Error(`Upload failed: ${xhr.statusText}`);
-//         }
-//       };
-//
-//       xhr.onerror = () => {
-//         console.error('Error uploading file');
-//         setIsLoading(false);
-//         setProgress(0);
-//       };
-//
-//       xhr.open('POST', '/entry-wizard/analyze-document', true);
-//       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-//       xhr.send(formData);
-//     } catch (error) {
-//       console.error('Error uploading file:', error);
-//       setIsLoading(false);
-//       setProgress(0);
-//     }
-//   };
-//
-//   return (
-//     <Modal.Root>
-//       <Modal.Trigger>
-//         <LinkButton>
-//           <Flex gap="2">
-//             <Magic />
-//             <Typography>Generate entry</Typography>
-//           </Flex>
-//         </LinkButton>
-//       </Modal.Trigger>
-//       <Modal.Content>
-//         <Modal.Header>
-//           <h2 id="title">Upload Document</h2>
-//         </Modal.Header>
-//         <Modal.Body>
-//           <Box padding={4}>
-//             <CustomDropzone onUpload={setFile} disabled={isLoading} />
-//           </Box>
-//           {isLoading && (
-//             <Box padding={4}>
-//               <Typography variant="epsilon">Processing...</Typography>
-//               <ProgressBar value={progress} max={100} />
-//             </Box>
-//           )}
-//         </Modal.Body>
-//         <Modal.Footer>
-//           <Modal.Close>
-//             <Button onClick={onClose} disabled={isLoading}>
-//               Cancel
-//             </Button>
-//           </Modal.Close>
-//           <Button onClick={handleUpload} disabled={isLoading}>
-//             Upload & Analyze
-//           </Button>
-//         </Modal.Footer>
-//       </Modal.Content>
-//     </Modal.Root>
-//   );
-// };
-//
-// export default DropzoneModal;
-
 import React, { useState } from 'react';
 import { Modal, Button, Box, LinkButton, Flex, Typography } from '@strapi/design-system';
 import { Magic } from '@strapi/icons';
 import {
   unstable_useContentManagerContext as useContentManagerContext,
   useAuth,
+  useNotification,
 } from '@strapi/strapi/admin';
 
 import CustomDropzone from './Dropzone';
-import UploadProgressCircular from './UploadProgress';
+import UploadProgressLinear from './UploadProgress';
 
-const DropzoneModal = ({ isOpen, onClose }: { isOpen: any; onClose: any }) => {
-  const [file, setFile] = useState(null);
+const DropzoneModal = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadComplete, setUploadComplete] = useState(false);
+  const [completedUploads, setCompletedUploads] = useState<number>(0);
 
-  const { model } = useContentManagerContext(); // Get the current UID
+  const { model } = useContentManagerContext();
   const token = useAuth('Admin', (state) => state.token);
+  const { toggleNotification } = useNotification();
 
-  const handleUpload = async (file: any) => {
-    setFile(file);
+  const handleUpload = async () => {
     setIsUploading(true);
-    setUploadComplete(false);
+    let completed: number = 0;
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('uid', model);
+    for (const file of files) {
+      try {
+        await uploadFile(file);
+        completed += 1;
+        setCompletedUploads(completed);
+      } catch (error) {
+        console.error(`❌ Upload failed for ${file.name}:`, error);
+        toggleNotification({
+          type: 'warning',
+          message: `Upload failed for ${file.name}`,
+        });
+      }
+    }
 
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/entry-wizard/analyze-document', true);
-    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    setIsUploading(false);
 
-    xhr.onload = () => {
+    if (completed > 0) {
+      toggleNotification({
+        type: 'success',
+        message: `Successfully uploaded ${completed} file${completed > 1 ? 's' : ''}! \n\n Refreshing page in 2 seconds...`,
+      });
+
       setTimeout(() => {
-        setUploadComplete(true);
-        setTimeout(() => {
-          setIsUploading(false);
-          setFile(null);
-        }, 1000);
+        window.location.reload();
       }, 2000);
-    };
+    }
+  };
 
-    xhr.onerror = () => {
-      console.error('Upload failed.');
-      setIsUploading(false);
-    };
+  const uploadFile = async (file: File) => {
+    return new Promise<void>((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('uid', model);
 
-    xhr.send(formData);
+      setUploadProgress((prev) => ({ ...prev, [file.name]: 5 }));
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/entry-wizard/analyze-document', true);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+      let progress = 5; // Track progress per file
+
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          return {
+            ...prev,
+            [file.name]: Math.min((prev[file.name] || 0) + 5, 90),
+          };
+        });
+        progress = Math.min(progress + 5, 90);
+        setUploadProgress((prev) => ({ ...prev, [file.name]: progress }));
+      }, 2000);
+
+      xhr.onload = async () => {
+        clearInterval(progressInterval);
+        if (xhr.status === 200) {
+          setUploadProgress((prev) => ({ ...prev, [file.name]: 100 }));
+
+          resolve();
+        } else {
+          reject(new Error(`Error uploading ${file.name}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        clearInterval(progressInterval);
+        reject(new Error(`Upload failed for ${file.name}`));
+      };
+
+      xhr.send(formData);
+    });
+  };
+
+  const closeModal = () => {
+    setIsVisible(false);
   };
 
   return (
-    <Modal.Root>
-      <Modal.Trigger>
-        <LinkButton>
-          <Flex gap="2">
-            <Magic />
-            <Typography>Generate entry</Typography>
-          </Flex>
-        </LinkButton>
-      </Modal.Trigger>
+    <Modal.Root open={isVisible} onOpenChange={closeModal}>
+      <LinkButton onClick={() => setIsVisible(true)}>
+        <Flex gap="2">
+          <Magic />
+          <Typography>Generate entry</Typography>
+        </Flex>
+      </LinkButton>
       <Modal.Content>
         <Modal.Header>
-          <Typography>Upload Document</Typography>
+          <Typography variant="alpha">Upload Documents</Typography>
         </Modal.Header>
         <Modal.Body>
           <Box padding={4}>
             {!isUploading ? (
-              <CustomDropzone onUpload={handleUpload} disabled={isUploading} />
+              <CustomDropzone onUpload={setFiles} disabled={isUploading} />
             ) : (
-              <UploadProgressCircular isUploading={isUploading} uploadComplete={uploadComplete} />
+              <Box>
+                {files.map((file) => (
+                  <>
+                    <UploadProgressLinear
+                      key={file.name}
+                      fileName={file.name}
+                      progress={uploadProgress[file.name] || 0}
+                    />
+                  </>
+                ))}
+              </Box>
             )}
           </Box>
         </Modal.Body>
         <Modal.Footer>
           <Modal.Close>
-            <Button onClick={onClose} disabled={isUploading}>
-              Cancel
-            </Button>
+            <Button disabled={isUploading}>Cancel</Button>
           </Modal.Close>
-          <Button onClick={() => handleUpload(file)} disabled={isUploading || !file}>
-            Upload & Generate
+          <Button onClick={handleUpload} disabled={isUploading || files.length === 0}>
+            Upload & Generate ({completedUploads}/{files.length})
           </Button>
         </Modal.Footer>
       </Modal.Content>
