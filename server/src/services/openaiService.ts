@@ -2,10 +2,6 @@
 import OpenAI from 'openai';
 import schemaMappingService from '../services/schemaMappingService';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPEN_AI_SECRET_KEY,
-});
-
 const cache = new Map();
 
 function extractRelevantSections(html) {
@@ -52,14 +48,19 @@ const analyzeDocument = async (htmlContent, uid) => {
     const { attributes, components } = await schemaMappingService.getSchemaForUID(uid);
 
     const cleanedHTML = extractRelevantSections(htmlContent);
+    const settings = strapi.config.get('plugin::entry-wizard');
 
-    // if (cache.has(cleanedHTML)) {
-    //   return cache.get(cleanedHTML);
-    // }
+    if (cache.has(cleanedHTML)) {
+      return cache.get(cleanedHTML);
+    }
+
+    const openai = new OpenAI({
+      apiKey: settings.apiKey || process.env.OPEN_AI_SECRET_KEY,
+    });
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4-turbo',
-      temperature: 0.0,
+      model: settings.model || 'gpt-4-turbo',
+      temperature: settings.temperature || 0.0,
       tools: [
         {
           type: 'function',

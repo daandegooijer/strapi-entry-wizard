@@ -10,6 +10,18 @@ export default {
           policies: ['admin::isAuthenticatedAdmin'],
         },
       },
+      {
+        method: 'GET',
+        path: '/settings',
+        handler: 'settingsController.getSettings',
+        config: { policies: [] },
+      },
+      {
+        method: 'POST',
+        path: '/settings',
+        handler: 'settingsController.updateSettings',
+        config: { policies: [] },
+      },
     ],
   },
 };

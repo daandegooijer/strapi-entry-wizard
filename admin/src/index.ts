@@ -1,6 +1,7 @@
 import { PLUGIN_ID } from './pluginId';
 import { Initializer } from './components/Initializer';
 import DropzoneModal from './components/Modal';
+import { Magic } from '@strapi/icons';
 
 export default {
   register(app: any) {
@@ -10,6 +11,28 @@ export default {
       isReady: false,
       name: PLUGIN_ID,
     });
+
+    app.createSettingSection(
+      {
+        id: 'entry-wizard',
+        intlLabel: {
+          id: 'entry-wizard.title',
+          defaultMessage: 'Entry Wizard',
+        },
+        category: 'plugins',
+      },
+      [
+        {
+          id: 'entry-wizard-settings',
+          intlLabel: {
+            id: 'entry-wizard.settings',
+            defaultMessage: 'Settings',
+          },
+          to: '/plugins/entry-wizard/settings',
+          Component: async () => import('./pages/Settings'),
+        },
+      ]
+    );
   },
 
   bootstrap(app: any) {

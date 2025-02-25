@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Button, Box, LinkButton, Flex, Typography } from '@strapi/design-system';
 import { Magic } from '@strapi/icons';
 import {
   unstable_useContentManagerContext as useContentManagerContext,
   useAuth,
   useNotification,
+  useFetchClient,
 } from '@strapi/strapi/admin';
 
 import CustomDropzone from './Dropzone';
@@ -16,11 +17,29 @@ const DropzoneModal = () => {
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [isUploading, setIsUploading] = useState(false);
   const [completedUploads, setCompletedUploads] = useState<number>(0);
+  const [allowedModels, setAllowedModels] = useState<string[]>([]);
 
   const { model } = useContentManagerContext();
   const token = useAuth('Admin', (state) => state.token);
   const { toggleNotification } = useNotification();
+  const { get } = useFetchClient();
 
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { data } = await get('/entry-wizard/settings');
+        setAllowedModels(data.modelUIDs || []);
+      } catch (error) {
+        console.error('Error fetching settings', JSON.stringify(error, null, 2));
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  if (!allowedModels.includes(model)) {
+    return null;
+  }
   const handleUpload = async () => {
     setIsUploading(true);
     let completed: number = 0;
@@ -107,7 +126,7 @@ const DropzoneModal = () => {
       <LinkButton onClick={() => setIsVisible(true)}>
         <Flex gap="2">
           <Magic />
-          <Typography>Generate entry</Typography>
+          <Typography>Upload documents</Typography>
         </Flex>
       </LinkButton>
       <Modal.Content>
