@@ -1,7 +1,7 @@
-import service from './service';
 import settingsService from './settingsService';
+import extractTextFromDocx from './extractTextFromDocx';
 
 export default {
-  service,
   settingsService,
+  extractTextFromDocx,
 };

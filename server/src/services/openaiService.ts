@@ -17,8 +17,9 @@ Strictly return a JSON object matching the provided schema.
 
 ### **Rules for Structuring Data:**
 - **H1 → \`title\` + \`slug\`** (Use the H1 text as the title and generate a slug from it).
+- Identify where each image belongs based on the content.
 - **Hero Section (\`hero\`)**
-  - Use the **first standalone image (full width)** as \`hero.image\`.
+  - **If hero has an image field in its schema, assign the first extracted image as its value as \`hero.image\`**
   - The **first H1 before this image** should be \`hero.title\`.
   - Use a **short, catchy phrase** (max **10 words**) as \`hero.subtitle\`.
   - **If the section has longer text**, move it to \`flexContent\` instead.
@@ -30,11 +31,16 @@ Strictly return a JSON object matching the provided schema.
   - If a section **only contains text**, use \`content.text\`.
   - If a section **contains both text and an image**, use \`content.text-image\`.
   - Ensure \`paragraph\` is **inside** the correct component.
+  - If an image is **inside or next to a paragraph**, assign it to 'content.image-text'.
+  - If an image appears alone, assign it to \`content.image\`.
+
+
+- **Use \`{{image:fileName}}\` placeholders in the correct components for images**.
 
 - **SEO**
   - Always generate a **\`seo\` object** with:
     - \`metaTitle\`: **Use the title**
-    - \`metaDescription\`: **Summarize the page in 150 characters.**
+    - \`metaDescription\`: **Summarize the page in maximum 125 characters.**
     - \`keywords\`: **Extract relevant keywords from the document.**
 
 ### **Rules for Formatting the Output:**
