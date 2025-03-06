@@ -151,8 +151,9 @@ const generateFunctionSchema = (attributes, components) => {
             __component: {
               type: 'string',
               description:
-                "Component type. Use 'content.text' for text-only sections, and 'content.text-image' for sections that include images.",
+                "Component type. Use 'content.text' for text-only sections, and 'content.image-text' for paragraph sections that include images. use 'content.image' for only images inside a paragraph",
             },
+            image: { type: ['string', 'null'], description: 'image URL or null' },
             paragraph: {
               type: 'object',
               properties: {

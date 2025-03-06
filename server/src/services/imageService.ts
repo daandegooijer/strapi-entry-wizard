@@ -34,8 +34,12 @@ const processAndSaveImage = async (filePath, fileName) => {
 
 export default {
   async processImagesAndReplace(newEntry: any, uploadedImages: any, token: string) {
-    for (const { fileName, field, component } of uploadedImages) {
-      const componentInstance = newEntry[field]?.find((c) => c.__component === component);
+    for (const { fileName, field, component, index } of uploadedImages) {
+      const componentInstance =
+        Array.isArray(newEntry[field]) && typeof index === 'number'
+          ? newEntry[field][index]
+          : newEntry[field];
+
       if (!componentInstance) {
         console.warn(`⚠️ No matching component for ${fileName} in ${field}`);
         continue;
@@ -46,6 +50,7 @@ export default {
       if (!fs.existsSync(filePath)) {
         throw new Error(`File not found: ${filePath}`);
       }
+
       const processedFilePath = await processAndSaveImage(filePath, fileName);
       const fileBuffer = await fs.promises.readFile(processedFilePath); // Read file as a Buffer
       const fileBlob = new Blob([fileBuffer], { type: 'image/webp' });
@@ -70,16 +75,17 @@ export default {
     });
   },
 
-  mapImagesToComponents(extractedData, images) {
+  mapImagesToComponents(extractedData: any, images: any) {
     const uploadedImages = [];
     try {
       let imageIndex = 0;
 
-      if (extractedData.hero?.some((h) => h.__component === 'hero.image')) {
+      if (extractedData.hero[0]?.image) {
         uploadedImages.push({
           fileName: images[imageIndex].fileName,
           field: 'hero',
           component: 'hero.image',
+          index: 0,
         });
         imageIndex++;
       }
@@ -88,20 +94,19 @@ export default {
         return uploadedImages;
       }
 
-      // ✅ Remaining images dynamically assigned to flexContent components
-      // extractedData.flexContent.forEach((item) => {
-      //   if (imageIndex >= images.length) return;
-      //
-      //   // ✅ Find a matching component in Strapi schema
-      //   // if (componentsWithImageFields[item.__component]) {
-      //   //   uploadedImages.push({
-      //   //     fileName: images[imageIndex].fileName,
-      //   //     field: 'flexContent',
-      //   //     component: item.__component,
-      //   //   });
-      //   //   imageIndex++;
-      //   // }
-      // });
+      extractedData.flexContent.forEach((item, flexIndex) => {
+        if (imageIndex >= images.length) return; // Stop if no images left
+
+        if (item.image && item.image.includes('{{image:')) {
+          uploadedImages.push({
+            fileName: images[imageIndex].fileName,
+            field: 'flexContent',
+            component: item.__component,
+            index: flexIndex,
+          });
+          imageIndex++;
+        }
+      });
 
       return uploadedImages;
     } catch (error) {

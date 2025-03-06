@@ -26,13 +26,13 @@ Strictly return a JSON object matching the provided schema.
 
 - **Flex Content (\`flexContent\`)**
   - **Prefix components with \`content.\`**.
-  - **H2 elements should be placed inside \`layout.heading\`** (inside a \`content.text\` component).
+  - **H2 elements should be placed inside \`layout.heading\`** (inside a \`content.text\` / \`content.image-text\` component).
   - **Paragraph text must be placed inside \`layout.paragraph\`**.
   - If a section **only contains text**, use \`content.text\`.
-  - If a section **contains both text and an image**, use \`content.text-image\`.
+  - If a section **contains both text and an image**, use \`content.image-text\`.
   - Ensure \`paragraph\` is **inside** the correct component.
-  - If an image is **inside or next to a paragraph**, assign it to 'content.image-text'.
-  - If an image appears alone, assign it to \`content.image\`.
+  - If an image is **inside or next to a paragraph**, assign it to \`content.image-text\`.
+  - If an image **is alone in a paragraph**, assign it to \`content.image\`.
 
 
 - **Use \`{{image:fileName}}\` placeholders in the correct components for images**.

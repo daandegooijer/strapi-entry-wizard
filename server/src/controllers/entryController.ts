@@ -85,8 +85,8 @@ export default {
       extractedData = cleanEntryData(extractedData, attributes);
       const sanitizedData = sanitizeDataForEntry(extractedData);
       const uploadedImages = imageService.mapImagesToComponents(extractedData, images);
-
       const newEntry = await strapi.documents(uid).create({ data: sanitizedData });
+
       const populatedEntry = await strapi
         .documents(uid)
         .findOne({ documentId: newEntry.documentId, populate: '*' });
