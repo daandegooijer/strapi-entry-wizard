@@ -13,8 +13,6 @@ const processAndSaveImage = async (filePath, fileName) => {
       return null; // Return null for invalid images
     }
 
-    console.log(`🎨 Processing image: ${fileName} (${type.mime})`);
-
     const webpFileName = fileName.replace(/\.[^.]+$/, '.webp'); // Replace extension with .webp
     const webpFilePath = path.join(path.dirname(filePath), webpFileName);
 
